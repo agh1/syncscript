@@ -1,0 +1,1 @@
+This script syncs a live Drupal site to a dev copy that use the same DB user.  The user running the script needs access to both sites' files.

@@ -1,0 +1,41 @@
+#!/bin/bash
+
+sitepath='PATH TO SITE NOT INCLUDING PUBLIC_HTML'
+devpath='PATH TO DEV SITE NOT INCLUDING PUBLIC_HTML'
+home='USERS HOME DIRECTORY'
+siteurl='www.whatever.org'
+devurl='dev.whatever.org'
+dbuser='DB USER'
+dbpass='USER PASSWORD'
+sitedb='SITE DATABASE'
+devdb='DEV DATABASE'
+
+sitepathesc=$(echo "$sitepath" | tr '/' '\\/')
+devpathesc=$(echo "$devpath" | tr '/' '\\/')
+
+
+rsync -rlvz $sitepath/public_html $devpath
+mysqldump -u $dbuser -p$dbpass $sitedb > $home/$sitedb-`/bin/date +%Y%m%d`.sql
+mysql -u $dbuser -p$dbpass $devdb < $home/$sitedb-`/bin/date +%Y%m%d`.sql
+rm $home/$sitedb-`/bin/date +%Y%m%d`.sql
+chmod 750 $devpath/public_html/sites/default/settings.php
+chmod 750 $devpath/public_html/sites/default/civicrm.settings.php
+chmod 750 $devpath/public_html/sites/default
+chmod 755 $devpath/public_html
+sed "s/.database. .. .$sitedb./'database' => '$devdb'/g" $devpath/public_html/sites/default/settings.php > $devpath/public_html/sites/default/settings.php.new
+sed "s/$sitedb?new_link=true/$devdb?new_link=true/" $devpath/public_html/sites/default/civicrm.settings.php > $devpath/public_html/sites/default/civicrm.settings.php.new
+sed "s/'$sitepathesc'/'$devpathesc'/" $devpath/public_html/sites/default/civicrm.settings.php.new > $devpath/public_html/sites/default/civicrm.settings.php.new1
+sed "s/$siteurl/$devurl/" $devpath/public_html/sites/default/civicrm.settings.php.new1 > $devpath/public_html/sites/default/civicrm.settings.php.new2
+sed 's/RewriteCond %{HTTP_HOST} !/#RewriteCond %{HTTP_HOST} !/' $devpath/public_html/.htaccess > $devpath/public_html/.htaccess.new
+sed 's/RewriteRule ^ http:\/\/www.%/#RewriteRule ^ http:\/\/www.%/' $devpath/public_html/.htaccess.new > $devpath/public_html/.htaccess.new1
+rm $devpath/public_html/.htaccess
+rm $devpath/public_html/.htaccess.new
+mv $devpath/public_html/.htaccess.new1 $devpath/public_html/.htaccess
+rm $devpath/public_html/sites/default/civicrm.settings.php
+rm $devpath/public_html/sites/default/civicrm.settings.php.new
+rm $devpath/public_html/sites/default/civicrm.settings.php.new1
+mv $devpath/public_html/sites/default/civicrm.settings.php.new2 $devpath/public_html/sites/default/civicrm.settings.php
+rm $devpath/public_html/sites/default/settings.php
+mv $devpath/public_html/sites/default/settings.php.new $devpath/public_html/sites/default/settings.php
+chmod 750 $devpath/public_html/sites/default/settings.php
+chmod 750 $devpath/public_html/sites/default/civicrm.settings.php
